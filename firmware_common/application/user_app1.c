@@ -101,10 +101,10 @@ void UserApp1Initialize(void)
   LedOff(YELLOW);
   LedOff(ORANGE);
   LedOff(RED);
+  LedOff(LCD_BLUE);
+  LedOff(LCD_GREEN);
   
   LedOn(LCD_RED);
-  LedOn(LCD_GREEN);
-  LedOn(LCD_BLUE);
   
   /* If good initialization, set state to Idle */
   if( 1 )
@@ -158,6 +158,7 @@ const u8 numLights = 8;
 /* What does this state do? */
 static void UserApp1SM_Idle(void)
 {
+#if 0
   static u16 loopCounter = 0;
   static bool movingForward = TRUE;
 
@@ -191,8 +192,24 @@ static void UserApp1SM_Idle(void)
         movingForward = TRUE;
       }
     }
+#endif
+  static u32 PWMCounter = 0;
+  static LedRateType PWMRate = LED_PWM_100;
+  const u32 PWMChangeRate = 400; //40 ms
     
-  }
+  PWMCounter++;
+  if(PWMCounter == PWMChangeRate){
+      PWMCounter = 0;
+      LedPWM(LCD_GREEN, PWMRate);
+      
+      if(PWMRate == LED_PWM_0){
+         PWMRate = LED_PWM_100;
+      }
+      else{
+        PWMRate--;
+      }
+    }
+    
   
 } /* end UserApp1SM_Idle() */
      
