@@ -23,7 +23,6 @@ GLOBALS
 
 CONSTANTS
 - NONE
-
 TYPES
 - NONE
 
@@ -92,6 +91,7 @@ Promises:
 */
 void UserApp1Initialize(void)
 {
+  HEARTBEAT_OFF();
   /* If good initialization, set state to Idle */
   if( 1 )
   {
@@ -121,6 +121,7 @@ Promises:
 - Calls the function to pointed by the state machine function pointer
 
 */
+
 void UserApp1RunActiveState(void)
 {
   UserApp1_pfStateMachine();
@@ -138,9 +139,38 @@ State Machine Function Definitions
 **********************************************************************************************************************/
 /*-------------------------------------------------------------------------------------------------------------------*/
 /* What does this state do? */
+static u16 u16sleepCounter = 0;
+static u8 u8multiplierIndex = 0;
+bool wasOn = TRUE;
+int blinkingMultiplier[] = {1,2,4,5,10,20,50,100};
+int numCyclesInBlinkRate = 0, numCyclesPerBlinkRate = 5;
+int numMultipliers = sizeof(blinkingMultiplier)/sizeof(blinkingMultiplier[0]);
+
+
 static void UserApp1SM_Idle(void)
 {
-    
+    u16sleepCounter++;
+    if(u16sleepCounter == U16_COUNTER_PERIOD_MS/blinkingMultiplier[u8multiplierIndex]){
+      if(wasOn){
+        HEARTBEAT_OFF();
+        wasOn = FALSE;
+      }
+      else{
+        HEARTBEAT_ON();
+        wasOn = TRUE;
+      }
+      u16sleepCounter = 0;
+   
+      numCyclesInBlinkRate++;
+      if(numCyclesInBlinkRate == numCyclesPerBlinkRate){
+         numCyclesInBlinkRate = 0;
+         
+         u8multiplierIndex++;
+         if(u8multiplierIndex > numMultipliers){
+          u8multiplierIndex = 0;
+         }
+      }
+    }
 } /* end UserApp1SM_Idle() */
      
 
