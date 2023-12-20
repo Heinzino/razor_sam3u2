@@ -13,17 +13,29 @@ Header file for main.c.
 * Constant Definitions
 ***********************************************************************************************************************/
 #define U32_DRINK_SERVE_TIME    (u32)3000   /* Loop iterations before drink is removed */
-
+#define U8_MAX_DRINKS           (u8)3
+#define U8_MAX_SERVERS          (u8)5
 
 /***********************************************************************************************************************
 * Type Definitions
 ***********************************************************************************************************************/
+typedef enum {EMPTY, BEER, SHOOTER, WINE, HIBALL} DrinkType;
+
+typedef struct
+{
+  u8 u8ServerNumber;
+  DrinkType asServingTray[U8_MAX_DRINKS];
+  void* psNextServer
+}
+ServerType;
+
 
 
 /***********************************************************************************************************************
 * Function declarations
 ***********************************************************************************************************************/
+bool InitializeServer(ServerType** psServer_);
+bool CreateServer(ServerType** psServerList);
 
 
-      
     #endif /* __MAIN_H */
