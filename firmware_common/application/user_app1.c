@@ -92,6 +92,20 @@ Promises:
 */
 void UserApp1Initialize(void)
 {
+  
+  LedOff(WHITE);
+  LedOff(PURPLE);
+  LedOff(BLUE);
+  LedOff(CYAN);
+  LedOff(GREEN);
+  LedOff(YELLOW);
+  LedOff(ORANGE);
+  LedOff(RED);
+  
+  LedOn(LCD_RED);
+  LedOn(LCD_GREEN);
+  LedOn(LCD_BLUE);
+  
   /* If good initialization, set state to Idle */
   if( 1 )
   {
@@ -137,10 +151,49 @@ void UserApp1RunActiveState(void)
 State Machine Function Definitions
 **********************************************************************************************************************/
 /*-------------------------------------------------------------------------------------------------------------------*/
+
+const u16 counterPeriod = 500;
+const u8 numLights = 8;    
+  
 /* What does this state do? */
 static void UserApp1SM_Idle(void)
 {
+  static u16 loopCounter = 0;
+  static bool movingForward = TRUE;
+
+  static int index_lightToTurnOn = 0;
+  static u8 u8prevLightIndex = 7;
+  
+  
+  loopCounter++;
+  if(loopCounter == counterPeriod){ //Move every milisecond
     
+    loopCounter = 0;
+    LedOn((LedNameType) index_lightToTurnOn);
+    LedOff((LedNameType) u8prevLightIndex);
+    u8prevLightIndex = index_lightToTurnOn;
+
+    
+    if(movingForward){
+      index_lightToTurnOn++;
+      
+      if(index_lightToTurnOn == numLights){
+        movingForward = FALSE;
+        index_lightToTurnOn = 6;
+      }
+    }
+    
+    else{
+      index_lightToTurnOn--;
+      
+      if(index_lightToTurnOn == -1){
+        index_lightToTurnOn = 1;
+        movingForward = TRUE;
+      }
+    }
+    
+  }
+  
 } /* end UserApp1SM_Idle() */
      
 
