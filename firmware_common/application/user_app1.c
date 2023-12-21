@@ -59,13 +59,18 @@ extern volatile u32 G_u32ApplicationFlags;                /*!< @brief From main.
 Global variable definitions with scope limited to this local application.
 Variable names shall start with "UserApp1_<type>" and be declared as static.
 ***********************************************************************************************************************/
-static fnCode_type UserApp1_pfStateMachine;               /*!< @brief The state machine function pointer */
-//static u32 UserApp1_u32Timeout;                           /*!< @brief Timeout counter used across states */
-
 
 /**********************************************************************************************************************
 Function Definitions
 **********************************************************************************************************************/
+//State Machine Declarations
+
+static StateMachineType UserApp1SM;
+
+static void StartUpState(StateMachineEventType Event);
+static void LockedState(StateMachineEventType Event);
+static void ChangePasswordState(StateMachineEventType Event);
+static void CheckPasswordState(StateMachineEventType Event);
 
 /*--------------------------------------------------------------------------------------------------------------------*/
 /*! @publicsection */                                                                                            
@@ -92,20 +97,36 @@ Promises:
 */
 void UserApp1Initialize(void)
 {
+  LedOff(WHITE);
+  LedOff(PURPLE);
+  LedOff(BLUE);
+  LedOff(CYAN);
+  LedOff(GREEN);
+  LedOff(YELLOW);
+  LedOff(ORANGE);
+  LedOff(RED);
   /* If good initialization, set state to Idle */
-  if( 1 )
-  {
-    UserApp1_pfStateMachine = UserApp1SM_Idle;
-  }
-  else
-  {
-    /* The task isn't properly initialized, so shut it down and don't run */
-    UserApp1_pfStateMachine = UserApp1SM_Error;
-  }
+  
+  InitStateMachine(&UserApp1SM, StartUpState);
 
 } /* end UserApp1Initialize() */
 
-  
+/*------------------------------------------------------------------------------------------------------------------*/
+/*! @privatesection */                                                                                            
+/*--------------------------------------------------------------------------------------------------------------------*/
+
+static void AckAllBtns(void){
+   ButtonAcknowledge(BUTTON0);
+   ButtonAcknowledge(BUTTON1);
+   ButtonAcknowledge(BUTTON2);
+   ButtonAcknowledge(BUTTON3);
+}
+
+static bool anyBtnPressed(void){
+  return (WasButtonPressed(BUTTON0) || WasButtonPressed(BUTTON1) 
+          || WasButtonPressed(BUTTON2) || WasButtonPressed(BUTTON3));
+}
+
 /*!----------------------------------------------------------------------------------------------------------------------
 @fn void UserApp1RunActiveState(void)
 
@@ -123,14 +144,14 @@ Promises:
 */
 void UserApp1RunActiveState(void)
 {
-  UserApp1_pfStateMachine();
-
+  //Combo to change password
+  if(IsButtonHeld(BUTTON1,3000) && IsButtonHeld(BUTTON2,3000)){ 
+    AckAllBtns();
+    ChangeState(&UserApp1SM,ChangePasswordState);
+  }
+  RunStateMachine(&UserApp1SM);
 } /* end UserApp1RunActiveState */
 
-
-/*------------------------------------------------------------------------------------------------------------------*/
-/*! @privatesection */                                                                                            
-/*--------------------------------------------------------------------------------------------------------------------*/
 
 
 /**********************************************************************************************************************
@@ -138,20 +159,171 @@ State Machine Function Definitions
 **********************************************************************************************************************/
 /*-------------------------------------------------------------------------------------------------------------------*/
 /* What does this state do? */
-static void UserApp1SM_Idle(void)
-{
-    
-} /* end UserApp1SM_Idle() */
+
+#define MAX_PASS_LENGTH 10
+ static ButtonNameType password[MAX_PASS_LENGTH] = {BUTTON0, BUTTON1,BUTTON2};
+ static u8 u8passLength = 3;
+ 
+ static ButtonNameType passwordEntry[MAX_PASS_LENGTH];
+ static u8 u8entryPassLength = 0;
+
+ 
+ void StartUpState(StateMachineEventType Event){
+   
+   switch(Event){
      
+   case SM_ENTER_EVENT:
+     LedPWM(YELLOW,LED_PWM_70);
+     SetTimeout(&UserApp1SM,3000); //3 seconds to enter setting state
+     AckAllBtns();
+     break;
+   
+   case SM_TICK_EVENT:
+     if(WasButtonPressed(BUTTON3)){
+       ButtonAcknowledge(BUTTON3);
+       ChangeState(&UserApp1SM, ChangePasswordState);
+     }
+     break;
+   
+   
+    case SM_TIMEOUT_EVENT:
+       ChangeState(&UserApp1SM,LockedState);
+       break;
+     
+   case SM_EXIT_EVENT:
+       LedOff(YELLOW);
+       break;
 
-/*-------------------------------------------------------------------------------------------------------------------*/
-/* Handle an error */
-static void UserApp1SM_Error(void)          
-{
-  
-} /* end UserApp1SM_Error() */
-
-
+    }
+ }
+ 
+ void ChangePasswordState(StateMachineEventType Event){
+   //Change password; input taken up to 10 letters or when button3 is pressed.
+   switch(Event){
+     
+   case SM_ENTER_EVENT:
+     LedBlink(RED,LED_1HZ);
+     LedBlink(GREEN,LED_1HZ);
+     AckAllBtns();
+     u8passLength = 0;
+     break;
+   
+   case SM_TIMEOUT_EVENT:
+     break;
+     
+     
+   case SM_TICK_EVENT:
+     if(u8passLength < MAX_PASS_LENGTH){
+       if(WasButtonPressed(BUTTON0)){
+         ButtonAcknowledge(BUTTON0);
+         password[u8passLength++] = BUTTON0;
+       }
+       else if(WasButtonPressed(BUTTON1)){
+         ButtonAcknowledge(BUTTON1);
+         password[u8passLength++] = BUTTON1;
+       }
+       else if(WasButtonPressed(BUTTON2)){
+         ButtonAcknowledge(BUTTON2);
+         password[u8passLength++] = BUTTON2;
+       }  
+     }
+     if(u8passLength >= MAX_PASS_LENGTH || WasButtonPressed(BUTTON3)){
+       AckAllBtns();
+       ChangeState(&UserApp1SM,LockedState);
+     }
+     break;
+     
+   case SM_EXIT_EVENT:
+     LedOff(RED);
+     LedOff(GREEN);
+     break;
+   
+   }//End Switch(Event)
+ }//End of Function
+ 
+ 
+ void LockedState(StateMachineEventType Event){
+   
+   switch(Event){
+     
+     
+   case SM_ENTER_EVENT:
+     LedOn(RED);
+     AckAllBtns();
+     u8entryPassLength = 0;
+     break;
+     
+   case SM_EXIT_EVENT:
+     LedOff(RED);
+     break;
+     
+   case SM_TIMEOUT_EVENT:
+     break;
+     
+   case SM_TICK_EVENT:
+     if(u8entryPassLength < MAX_PASS_LENGTH){
+       if(WasButtonPressed(BUTTON0)){
+         ButtonAcknowledge(BUTTON0);
+         passwordEntry[u8entryPassLength++] = BUTTON0;
+       }
+       else if(WasButtonPressed(BUTTON1)){
+         ButtonAcknowledge(BUTTON1);
+         passwordEntry[u8entryPassLength++] = BUTTON1;
+       }
+       else if(WasButtonPressed(BUTTON2)){
+         ButtonAcknowledge(BUTTON2);
+         passwordEntry[u8entryPassLength++] = BUTTON2;
+       }  
+     }
+     
+     if(WasButtonPressed(BUTTON3)){
+         ButtonAcknowledge(BUTTON3);
+         ChangeState(&UserApp1SM, CheckPasswordState);
+      }
+      break;
+               
+   }
+ }
+ 
+               
+ void CheckPasswordState(StateMachineEventType Event){
+   
+   switch(Event){
+     
+   case SM_TIMEOUT_EVENT:
+       break;
+       
+   case SM_ENTER_EVENT:
+     bool passMatch = FALSE;
+     
+     if(u8entryPassLength != u8passLength){
+       passMatch = FALSE;
+     }
+     else{
+       for(int i = 0; i < u8passLength; ++i){
+         if(passwordEntry[i] != password[i]){
+           passMatch = FALSE;
+           break;
+         }
+         passMatch = TRUE;
+       }
+     }
+     (passMatch) ? LedBlink(GREEN,LED_4HZ) : LedBlink(RED, LED_2HZ);  
+     break;
+   
+   case SM_EXIT_EVENT:
+     LedOff(GREEN);
+     LedOff(RED);
+     break;
+     
+   case SM_TICK_EVENT:
+     if(anyBtnPressed()){
+       AckAllBtns();
+       ChangeState(&UserApp1SM,LockedState);
+     }
+     break;
+   }
+ }
 
 
 /*--------------------------------------------------------------------------------------------------------------------*/
