@@ -56,6 +56,7 @@ static void UserApp1SM_Error(void);
 Constants / Definitions
 **********************************************************************************************************************/
 
+#define USER1_INPUT_BUFFER_SIZE (u16)(DEBUG_SCANF_BUFFER_SIZE + 1)
 
 #endif /* __USER_APP1_H */
 
