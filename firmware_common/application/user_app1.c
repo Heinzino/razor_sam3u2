@@ -54,6 +54,8 @@ extern volatile u32 G_u32SystemTime1s;                    /*!< @brief From main.
 extern volatile u32 G_u32SystemFlags;                     /*!< @brief From main.c */
 extern volatile u32 G_u32ApplicationFlags;                /*!< @brief From main.c */
 
+extern u8 G_au8DebugScanfBuffer[];
+extern u8 G_u8DebugScanfCharCount;
 
 /***********************************************************************************************************************
 Global variable definitions with scope limited to this local application.
@@ -62,6 +64,7 @@ Variable names shall start with "UserApp1_<type>" and be declared as static.
 static fnCode_type UserApp1_pfStateMachine;               /*!< @brief The state machine function pointer */
 //static u32 UserApp1_u32Timeout;                           /*!< @brief Timeout counter used across states */
 
+static u8 au8UserInputBuffer[USER1_INPUT_BUFFER_SIZE];
 
 /**********************************************************************************************************************
 Function Definitions
@@ -131,16 +134,123 @@ void UserApp1RunActiveState(void)
 /*------------------------------------------------------------------------------------------------------------------*/
 /*! @privatesection */                                                                                            
 /*--------------------------------------------------------------------------------------------------------------------*/
+typedef enum{OCTAVE3=0, OCTAVE4=1, OCTAVE5=2, OCTAVE6=3} Octave;
+static Octave previousOctave = OCTAVE3;
 
+static u16 getNote(u8 keyboardInput){
+  
+  switch(keyboardInput){
+    
+  case 'Z':
+    return C3;
+  case 'X':
+    return D3;
+  case 'C':
+    return E3;
+  case 'V':
+    return F3;
+  case 'B':
+    return G3;
+  case 'N':
+    return A3;
+  case 'M':
+    return B3;
+  case 'S':
+    return C3S;
+  case 'D':
+    return D3S;
+  case 'G':
+     return F3S;
+  case 'H':
+     return G3S;
+  case 'J':
+     return A3S;
+  default:
+    return NONE;
+  }
+}
+
+static void playBuzzerFor500ms(void){
+  PWMAudioOn(BUZZER1);
+  for(u16 i = 0; i < 500; ++i);
+  PWMAudioOff(BUZZER1);
+}
+
+static Octave getCurrentOctave(void){
+  if(WasButtonPressed(BUTTON0)){
+    ButtonAcknowledge(BUTTON0);
+    previousOctave = OCTAVE3;
+    return OCTAVE3;
+  }
+  else if(WasButtonPressed(BUTTON1)){
+    ButtonAcknowledge(BUTTON1);
+    previousOctave = OCTAVE4;
+    return OCTAVE4;
+  }
+  else if(WasButtonPressed(BUTTON2)){
+    ButtonAcknowledge(BUTTON2);
+    previousOctave = OCTAVE5;
+    return OCTAVE5;
+  }
+  else if(WasButtonPressed(BUTTON3)){
+    ButtonAcknowledge(BUTTON3);
+    previousOctave = OCTAVE6;
+    return OCTAVE6;
+  }
+  else{
+    return previousOctave;
+  }
+}
+
+static void turnOnOctaveLED(Octave currentOctave){
+   LedOff(CYAN);
+   LedOff(GREEN);
+   LedOff(YELLOW);
+   LedOff(ORANGE);
+   
+   switch(currentOctave){
+     
+     case OCTAVE3:
+       LedOn(CYAN);
+       return;
+   
+    case OCTAVE4:
+       LedOn(GREEN);
+       return;
+   case OCTAVE5:
+       LedOn(YELLOW);
+       return;
+   case OCTAVE6:
+       LedOn(ORANGE);
+       return;
+   }
+}
 
 /**********************************************************************************************************************
 State Machine Function Definitions
 **********************************************************************************************************************/
 /*-------------------------------------------------------------------------------------------------------------------*/
 /* What does this state do? */
+
 static void UserApp1SM_Idle(void)
 {
-    
+    /*
+  
+  int octave = 1;
+  int octaveMultiplier = pow(2,octave);
+  */
+  Octave currentOctave = getCurrentOctave();
+  turnOnOctaveLED(currentOctave);
+  u8 octaveMultiplier = pow(2,(double) currentOctave);
+  
+  G_u8DebugScanfCharCount = DebugScanf(au8UserInputBuffer);
+  for(u8 i = 0; i < G_u8DebugScanfCharCount; ++i){
+    u16 noteToPlay = getNote(au8UserInputBuffer[i]) * octaveMultiplier;
+    PWMAudioSetFrequency(BUZZER1, noteToPlay);
+    if(noteToPlay != NONE)
+      playBuzzerFor500ms();
+  }
+  
 } /* end UserApp1SM_Idle() */
      
 
@@ -148,7 +258,7 @@ static void UserApp1SM_Idle(void)
 /* Handle an error */
 static void UserApp1SM_Error(void)          
 {
-  
+
 } /* end UserApp1SM_Error() */
 
 
