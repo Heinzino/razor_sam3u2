@@ -54,6 +54,8 @@ extern volatile u32 G_u32SystemTime1s;                    /*!< @brief From main.
 extern volatile u32 G_u32SystemFlags;                     /*!< @brief From main.c */
 extern volatile u32 G_u32ApplicationFlags;                /*!< @brief From main.c */
 
+extern u8 G_au8DebugScanBuffer[];                       /*From debug.c*/
+extern u8 G_u8DebugScanfCharCount;                     /*From debug.c*/
 
 /***********************************************************************************************************************
 Global variable definitions with scope limited to this local application.
@@ -62,7 +64,7 @@ Variable names shall start with "UserApp1_<type>" and be declared as static.
 static fnCode_type UserApp1_pfStateMachine;               /*!< @brief The state machine function pointer */
 //static u32 UserApp1_u32Timeout;                           /*!< @brief Timeout counter used across states */
 
-
+static u8 au8UserInputBuffer[USER1_INPUT_BUFFER_SIZE];
 /**********************************************************************************************************************
 Function Definitions
 **********************************************************************************************************************/
@@ -92,6 +94,11 @@ Promises:
 */
 void UserApp1Initialize(void)
 {
+  
+  for(u32 i = 0; i < USER1_INPUT_BUFFER_SIZE; ++i){
+    au8UserInputBuffer[i] = 0;
+  }
+  
   /* If good initialization, set state to Idle */
   if( 1 )
   {
@@ -131,7 +138,32 @@ void UserApp1RunActiveState(void)
 /*------------------------------------------------------------------------------------------------------------------*/
 /*! @privatesection */                                                                                            
 /*--------------------------------------------------------------------------------------------------------------------*/
+#define MAX_NUM_COLS   30
 
+static u8 u8NameCountMessage[] = "Heinz: ";
+char *strNameCountMessage = "Heinz: ";
+
+static int getNumDigits(u32 count){
+  int result = 1;
+  while(count/10 > 0){
+    count /= 10;
+    result++;
+  }
+  return result;
+}
+
+static void printHalfRow(int numDigits, int numCols){
+   DebugPrintf("\n\r");
+   for(int i = 0; i < numDigits; ++i){
+       u8 rowToPrint[MAX_NUM_COLS];
+       for(int j = 0; j < numCols; ++j){
+            rowToPrint[j] = '*';
+        }
+          rowToPrint[numCols] = '\0';
+          DebugPrintf(rowToPrint);
+          DebugPrintf("\n\r");
+    }
+}
 
 /**********************************************************************************************************************
 State Machine Function Definitions
@@ -140,7 +172,70 @@ State Machine Function Definitions
 /* What does this state do? */
 static void UserApp1SM_Idle(void)
 {
+   u8 u8charCount;
+  const char *sName = "Heinz";
+  u8 nameLength = strlen(sName);
+  static u8 matchIndex = 0;
+  static u32 u32nameOccuranceCount = 0;
+  static bool firstInsert = TRUE;
+        
+  u8charCount = DebugScanf(au8UserInputBuffer);
+  
+  if(WasButtonPressed(BUTTON3)){
+    ButtonAcknowledge(BUTTON3);
+    u32nameOccuranceCount *= 10;
+  }
+  
+  for(u8 i = 0; i < u8charCount && matchIndex < nameLength-1; ++i){
     
+    char cInput = au8UserInputBuffer[i];
+    
+    char currentLetter = sName[matchIndex];
+    //Condition in for loop -> no out of bounds
+    char nextLetter = sName[matchIndex+1]; 
+    
+                          
+    if(cInput == currentLetter){
+      if(matchIndex == 0){ 
+         firstInsert = FALSE;
+      }
+       continue;
+    }
+    else if(cInput == nextLetter && !firstInsert){
+      matchIndex++;
+    }
+    else{
+      matchIndex = 0;
+      firstInsert = TRUE;
+      break;
+    }
+ }
+  
+  if(matchIndex == nameLength - 1){
+        matchIndex = 0;
+        firstInsert = TRUE;
+        u32nameOccuranceCount++;
+        int numDigits = getNumDigits(u32nameOccuranceCount);
+        
+        int numCols = strlen(strNameCountMessage) + 3*numDigits;
+        
+        
+        printHalfRow(numDigits,numCols);
+        
+        //Print Middle Row
+        u8 middleRowStars[MAX_NUM_COLS];
+        int i = 0;
+        for(; i < numDigits; ++i){
+          middleRowStars[i] = '*';
+        }
+        middleRowStars[i] = '\0';
+        DebugPrintf(middleRowStars);
+        DebugPrintf(u8NameCountMessage);
+        DebugPrintNumber(u32nameOccuranceCount);
+        DebugPrintf(middleRowStars);
+        
+        printHalfRow(numDigits,numCols);
+    }
 } /* end UserApp1SM_Idle() */
      
 
