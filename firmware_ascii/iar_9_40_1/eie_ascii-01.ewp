@@ -94,7 +94,7 @@
                 </option>
                 <option>
                     <name>RTConfigPath2</name>
-                    <state>$TOOLKIT_DIR$\INC\c\DLib_Config_Normal.h</state>
+                    <state>$TOOLKIT_DIR$\inc\c\DLib_Config_Normal.h</state>
                 </option>
                 <option>
                     <name>GBECoreSlave</name>
@@ -1013,7 +1013,7 @@
                 </option>
                 <option>
                     <name>IlinkTrustzoneImportLibraryOut</name>
-                    <state>###Unitialized###</state>
+                    <state>eie_ascii-01_import_lib.o</state>
                 </option>
                 <option>
                     <name>OILinkExtraOption</name>
@@ -2340,6 +2340,12 @@
             </file>
             <file>
                 <name>$PROJ_DIR$\..\..\firmware_common\application\music.h</name>
+            </file>
+            <file>
+                <name>$PROJ_DIR$\..\..\firmware_common\application\stateMachine.c</name>
+            </file>
+            <file>
+                <name>$PROJ_DIR$\..\..\firmware_common\application\stateMachine.h</name>
             </file>
             <file>
                 <name>$PROJ_DIR$\..\..\firmware_common\application\user_app1.h</name>

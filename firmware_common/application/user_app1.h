@@ -26,11 +26,31 @@ Type Definitions
 /**********************************************************************************************************************
 Function Declarations
 **********************************************************************************************************************/
+#define NUM_DIGITS 4
+#define NUM_POSSIBILITIES (NUM_DIGITS* NUM_DIGITS * NUM_DIGITS* NUM_DIGITS)
+
+// Define parameters for the LCG algorithm
+#define LCG_MULTIPLIER (u8)13
+#define LCG_INCREMENT (u8)7
+#define LCG_MODULUS (u8)251  //Prime Number
 
 /*------------------------------------------------------------------------------------------------------------------*/
 /*! @publicsection */                                                                                            
 /*--------------------------------------------------------------------------------------------------------------------*/
 
+//PROMISES:
+//Creates an array with all permutations of possible passwords
+u32 lcg_rand(void);
+void lcg_seed(unsigned int seed);
+void alarmOn(int randomPassword[NUM_DIGITS]);
+void getRandomPassword(int randomPassword[NUM_DIGITS]);
+
+void alarmSound(void);
+
+void displayTime(u32 timeInSeconds);
+void displayChangeTime(u32 timeInSeconds);
+void updateTime(void);
+void changeTime(void);
 
 /*------------------------------------------------------------------------------------------------------------------*/
 /*! @protectedsection */                                                                                            
@@ -47,14 +67,13 @@ void UserApp1RunActiveState(void);
 /***********************************************************************************************************************
 State Machine Declarations
 ***********************************************************************************************************************/
-static void UserApp1SM_Idle(void);    
-static void UserApp1SM_Error(void);         
-
+       
 
 
 /**********************************************************************************************************************
 Constants / Definitions
 **********************************************************************************************************************/
+
 
 
 #endif /* __USER_APP1_H */
